@@ -1,0 +1,8 @@
+{
+  "name": "Picasso Artist",
+  "description": "A minimal, mobile-friendly doodle app with color selection and undo/redo capabilities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
