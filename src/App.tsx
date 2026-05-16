@@ -33,8 +33,8 @@ const COLORS = [
 ];
 
 const LegoManTemplate = () => (
-  <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4 overflow-hidden">
-    <svg viewBox="-20 -30 440 660" className="w-[90%] h-[90%] md:w-[85%] md:h-[85%] aspect-[2/3]">
+  <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-2 overflow-hidden">
+    <svg viewBox="-50 -60 500 720" className="w-[100%] h-[100%] md:w-[95%] md:h-[95%] aspect-[2/3]">
       <g stroke="black" strokeWidth="3" fill="white">
         {/* Head (Minifigure shape) - Rendered first so hat can cover top */}
         <path d="M155 125 V175 Q155 185 165 185 H235 Q245 185 245 175 V125 H155 Z" />
@@ -376,7 +376,7 @@ export default function App() {
 
       {/* Footer Controls */}
       <footer className="p-4 bg-white border-t border-gray-100 shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] z-10">
-        <div className="flex justify-center items-center gap-4 md:gap-8 max-w-lg mx-auto overflow-x-auto py-2 scrollbar-hide" id="color-palette">
+        <div className="flex justify-start md:justify-center items-center gap-4 md:gap-8 max-w-full md:max-w-xl mx-auto overflow-x-auto py-2 px-4 scrollbar-hide" id="color-palette">
           {COLORS.map((color) => (
             <button
               key={color.name}
