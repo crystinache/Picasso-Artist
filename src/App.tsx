@@ -33,8 +33,8 @@ const COLORS = [
 ];
 
 const LegoManTemplate = () => (
-  <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-8 overflow-hidden">
-    <svg viewBox="0 0 400 600" className="max-w-full max-h-full aspect-[2/3]">
+  <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4 overflow-hidden">
+    <svg viewBox="-20 -30 440 660" className="w-[90%] h-[90%] md:w-[85%] md:h-[85%] aspect-[2/3]">
       <g stroke="black" strokeWidth="3" fill="white">
         {/* Head (Minifigure shape) - Rendered first so hat can cover top */}
         <path d="M155 125 V175 Q155 185 165 185 H235 Q245 185 245 175 V125 H155 Z" />
@@ -241,9 +241,9 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white font-sans overflow-hidden select-none">
+    <div className="flex flex-col h-[100dvh] bg-white font-sans overflow-hidden select-none">
       {/* Header */}
-      <header className="p-4 flex justify-between items-center bg-white border-b border-gray-100 z-50 relative">
+      <header className="p-4 flex justify-between items-center bg-white border-b border-gray-100 z-50 relative shrink-0">
         <div className="relative">
           <button 
             onClick={toggleMenu}
@@ -375,8 +375,8 @@ export default function App() {
       </div>
 
       {/* Footer Controls */}
-      <footer className="p-4 bg-white border-t border-gray-100 safe-area-bottom z-10">
-        <div className="flex justify-center items-center gap-4 md:gap-8 max-w-lg mx-auto overflow-x-auto py-4 scrollbar-hide" id="color-palette">
+      <footer className="p-4 bg-white border-t border-gray-100 shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] z-10">
+        <div className="flex justify-center items-center gap-4 md:gap-8 max-w-lg mx-auto overflow-x-auto py-2 scrollbar-hide" id="color-palette">
           {COLORS.map((color) => (
             <button
               key={color.name}
