@@ -150,13 +150,35 @@ export default function App() {
   });
   const [isCalibratingPeek, setIsCalibratingPeek] = useState(true);
   const [receivedNumber, setReceivedNumber] = useState<string | null>(null);
+  const [isVibrationEnabled, setIsVibrationEnabled] = useState(() => localStorage.getItem('picasso_vibrate_peek') === 'true');
+  const [isNumberVisible, setIsNumberVisible] = useState(() => localStorage.getItem('picasso_show_number_peek') !== 'false');
 
-  // Sync Peek settings to localStorage
+  // Sync settings to localStorage
   useEffect(() => {
     localStorage.setItem('picasso_peek_color', peekNumberColor);
     localStorage.setItem('picasso_peek_size', peekNumberSize.toString());
     localStorage.setItem('picasso_peek_position', JSON.stringify(peekPosition));
-  }, [peekNumberColor, peekNumberSize, peekPosition]);
+    localStorage.setItem('picasso_vibrate_peek', isVibrationEnabled.toString());
+    localStorage.setItem('picasso_show_number_peek', isNumberVisible.toString());
+  }, [peekNumberColor, peekNumberSize, peekPosition, isVibrationEnabled, isNumberVisible]);
+
+  // Handle Vibration logic based on received number
+  useEffect(() => {
+    if (!receivedNumber || !isVibrationEnabled || !('vibrate' in navigator)) return;
+
+    const n = receivedNumber.trim();
+    let pattern: number[] = [];
+
+    if (n === '1') pattern = [300];
+    else if (n === '2') pattern = [300, 100, 300];
+    else if (n === '3') pattern = [600];
+    else if (n === '4') pattern = [600, 100, 300];
+    else if (n === '5') pattern = [600, 100, 300, 100, 300];
+
+    if (pattern.length > 0) {
+      navigator.vibrate(pattern);
+    }
+  }, [receivedNumber, isVibrationEnabled]);
 
   // Sync Color Mappings from Supabase
   useEffect(() => {
@@ -357,6 +379,30 @@ export default function App() {
     }
   };
 
+  const requestFullScreen = () => {
+    const docElm = document.documentElement;
+    const request = docElm.requestFullscreen || 
+                   (docElm as any).webkitRequestFullscreen || 
+                   (docElm as any).mozRequestFullScreen || 
+                   (docElm as any).msRequestFullscreen;
+    
+    if (request) {
+      request.call(docElm).catch(() => {
+        // Fail silently
+      });
+    }
+  };
+
+  const exitFullScreen = () => {
+    if (document.fullscreenElement) {
+      const exit = document.exitFullscreen ||
+                  (document as any).webkitExitFullscreen ||
+                  (document as any).mozCancelFullScreen ||
+                  (document as any).msExitFullscreen;
+      if (exit) exit.call(document);
+    }
+  };
+
   if (showSecretMenu) {
     return (
       <div className="fixed inset-0 z-[100] bg-gray-50 flex flex-col font-sans overflow-y-auto">
@@ -376,6 +422,7 @@ export default function App() {
               onClick={() => {
                 setIsPeekMode(true);
                 setShowSecretMenu(false);
+                requestFullScreen();
               }} 
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-full font-medium active:scale-95 transition-all shadow-md"
             >
@@ -436,7 +483,7 @@ export default function App() {
         )}
 
         <div className="flex-1 flex items-center justify-center w-full relative">
-          {displayNum && (
+          {displayNum && isNumberVisible && (
             <motion.div
               drag
               dragMomentum={false}
@@ -465,49 +512,91 @@ export default function App() {
         
         <AnimatePresence>
           {isCalibratingPeek && (
-            <motion.div initial={{ y: 200 }} animate={{ y: 0 }} exit={{ y: 300 }} className="absolute bottom-0 inset-x-0 bg-gray-900 border-t border-gray-800 p-8 flex flex-col items-center gap-6 z-[250]">
-              <div className="flex flex-col md:flex-row gap-8 w-full max-w-2xl px-4">
-                {/* Color Slider */}
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center gap-2 text-white/70 justify-center"><SlidersHorizontal size={16} /><span className="uppercase text-xs tracking-widest font-bold">Luminosità</span></div>
-                  <input 
-                    type="range" 
-                    min="20" 
-                    max="255" 
-                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-white" 
-                    onChange={(e) => { 
-                      const val = parseInt(e.target.value).toString(16).padStart(2, '0'); 
-                      setPeekNumberColor(`#${val}${val}${val}`); 
-                    }} 
-                  />
+            <motion.div initial={{ y: 300 }} animate={{ y: 0 }} exit={{ y: 500 }} className="absolute bottom-0 inset-x-0 bg-gray-950 border-t border-gray-800 p-6 md:p-8 flex flex-col items-center gap-6 z-[250] shadow-2xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl px-4">
+                {/* Sliders Container */}
+                <div className="space-y-6">
+                  {/* Color Slider */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-white/50 justify-between"><div className="flex items-center gap-2"><SlidersHorizontal size={14} /><span className="uppercase text-[10px] tracking-widest font-bold">Luminosità</span></div><span className="text-[10px] font-mono">{peekNumberColor}</span></div>
+                    <input 
+                      type="range" 
+                      min="20" 
+                      max="255" 
+                      className="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-white" 
+                      onChange={(e) => { 
+                        const val = parseInt(e.target.value).toString(16).padStart(2, '0'); 
+                        setPeekNumberColor(`#${val}${val}${val}`); 
+                      }} 
+                    />
+                  </div>
+
+                  {/* Size Slider */}
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-white/50 justify-between"><div className="flex items-center gap-2"><SlidersHorizontal size={14} /><span className="uppercase text-[10px] tracking-widest font-bold">Dimensione</span></div><span className="text-[10px] font-mono">{peekNumberSize}%</span></div>
+                    <input 
+                      type="range" 
+                      min="4" 
+                      max="80" 
+                      value={peekNumberSize}
+                      className="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-white" 
+                      onChange={(e) => setPeekNumberSize(parseInt(e.target.value))} 
+                    />
+                  </div>
                 </div>
 
-                {/* Size Slider */}
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center gap-2 text-white/70 justify-center"><SlidersHorizontal size={16} /><span className="uppercase text-xs tracking-widest font-bold">Dimensione</span></div>
-                  <input 
-                    type="range" 
-                    min="10" 
-                    max="80" 
-                    value={peekNumberSize}
-                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-white" 
-                    onChange={(e) => setPeekNumberSize(parseInt(e.target.value))} 
-                  />
+                {/* Toggles Container */}
+                <div className="flex flex-col gap-4 justify-center">
+                  <div className="flex items-center justify-between bg-gray-900/50 p-3 rounded-xl border border-gray-800">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isVibrationEnabled ? 'bg-orange-500/20 text-orange-500' : 'bg-gray-800 text-gray-500'}`}><Settings size={16} /></div>
+                      <div>
+                        <div className="text-white text-xs font-bold uppercase tracking-tight">Vibrate Peek</div>
+                        <div className="text-[9px] text-white/40">Vibrazione sui segnali 1-5</div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setIsVibrationEnabled(!isVibrationEnabled)}
+                      className={`w-12 h-6 rounded-full relative transition-colors duration-200 ${isVibrationEnabled ? 'bg-orange-500' : 'bg-gray-700'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-200 ${isVibrationEnabled ? 'left-7' : 'left-1'}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between bg-gray-900/50 p-3 rounded-xl border border-gray-800">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isNumberVisible ? 'bg-blue-500/20 text-blue-500' : 'bg-gray-800 text-gray-500'}`}><Eye size={16} /></div>
+                      <div>
+                        <div className="text-white text-xs font-bold uppercase tracking-tight">Number Peek</div>
+                        <div className="text-[9px] text-white/40">Mostra cifra visivamente</div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setIsNumberVisible(!isNumberVisible)}
+                      className={`w-12 h-6 rounded-full relative transition-colors duration-200 ${isNumberVisible ? 'bg-blue-500' : 'bg-gray-700'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-200 ${isNumberVisible ? 'left-7' : 'left-1'}`} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 mt-2">
                 <button 
                   onClick={() => setIsCalibratingPeek(false)} 
-                  className="px-12 py-4 bg-white text-black rounded-full font-bold uppercase tracking-widest active:scale-95 transition-transform shadow-lg shadow-white/10"
+                  className="px-12 py-3 bg-white text-black rounded-full font-bold uppercase tracking-widest active:scale-95 transition-transform shadow-lg shadow-white/10"
                 >
                   OK
                 </button>
                 <button 
-                  onClick={() => { setIsPeekMode(false); setReceivedNumber(null); }} 
-                  className="p-4 bg-gray-800 text-white rounded-full hover:bg-gray-700 active:scale-95 transition-all"
+                  onClick={() => { 
+                    setIsPeekMode(false); 
+                    setReceivedNumber(null); 
+                    exitFullScreen();
+                  }} 
+                  className="p-3 bg-gray-800 text-white rounded-full hover:bg-gray-700 active:scale-95 transition-all"
                 >
-                  <X size={24} />
+                  <X size={20} />
                 </button>
               </div>
             </motion.div>
