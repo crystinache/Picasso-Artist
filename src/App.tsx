@@ -534,7 +534,7 @@ export default function App() {
         {/* Ready indicator dot */}
         {!isCalibratingPeek && (
           <div 
-            className="absolute top-1 right-1 w-[3px] h-[3px] rounded-full z-[210] opacity-50" 
+            className="absolute top-1 right-1 w-[3px] h-[3px] rounded-full z-[210]" 
             style={{ backgroundColor: peekNumberColor }}
           />
         )}
