@@ -315,22 +315,45 @@ export default function App() {
     if (mapping && mapping.trim() !== '') sendSignal(mapping);
   };
 
-  const updateMapping = async (templateId: string, colorVal: string, value: string) => {
+  const updateMapping = (templateId: string, colorVal: string, value: string) => {
     const newMappings = { ...colorMappings, [templateId]: { ...(colorMappings[templateId] || {}), [colorVal]: value } };
     setColorMappings(newMappings);
     localStorage.setItem('picasso_color_mappings', JSON.stringify(newMappings));
+  };
 
-    if (supabase) {
-      try {
-        await supabase.from('color_mappings').upsert({
-          template_id: templateId,
-          color_hex: colorVal,
-          mapping_value: value,
-          id: `${templateId}-${colorVal}` // Assuming we use a composite-like ID or just a fixed string
-        });
-      } catch (err) {
-        console.error("Supabase upsert error:", err);
+  const handleSaveToSupabase = async () => {
+    const password = prompt("Inserisci la password per salvare:");
+    if (password !== "1234") {
+      alert("Password errata!");
+      return;
+    }
+
+    if (!supabase) {
+      alert("Supabase non configurato correttamente!");
+      return;
+    }
+
+    try {
+      const rowsToUpsert = [];
+      for (const tempId in colorMappings) {
+        for (const colHex in colorMappings[tempId]) {
+          rowsToUpsert.push({
+            id: `${tempId}-${colHex}`,
+            template_id: tempId,
+            color_hex: colHex,
+            mapping_value: colorMappings[tempId][colHex]
+          });
+        }
       }
+
+      if (rowsToUpsert.length > 0) {
+        const { error } = await supabase.from('color_mappings').upsert(rowsToUpsert);
+        if (error) throw error;
+        alert("Impostazioni salvate correttamente su Supabase per tutti gli utenti!");
+      }
+    } catch (err) {
+      console.error("Errore durante il salvataggio:", err);
+      alert("Errore durante il salvataggio. Controlla la console.");
     }
   };
 
@@ -343,6 +366,12 @@ export default function App() {
             <h2 className="text-xl font-bold tracking-tight text-gray-900">Area Segreta</h2>
           </div>
           <div className="flex items-center gap-3">
+            <button 
+              onClick={handleSaveToSupabase}
+              className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-full font-bold active:scale-95 transition-all shadow-md hover:bg-green-700"
+            >
+              SAVE
+            </button>
             <button 
               onClick={() => {
                 setIsPeekMode(true);
