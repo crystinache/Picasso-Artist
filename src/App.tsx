@@ -594,7 +594,7 @@ export default function App() {
                     <input 
                       type="range" 
                       min="1" 
-                      max="80" 
+                      max="20" 
                       value={peekNumberSize}
                       className="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-white" 
                       onChange={(e) => setPeekNumberSize(parseInt(e.target.value))} 
