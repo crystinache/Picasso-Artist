@@ -533,7 +533,10 @@ export default function App() {
       >
         {/* Ready indicator dot */}
         {!isCalibratingPeek && (
-          <div className="absolute top-1 right-1 w-[3px] h-[3px] bg-white rounded-full z-[210] opacity-50" />
+          <div 
+            className="absolute top-1 right-1 w-[3px] h-[3px] rounded-full z-[210] opacity-50" 
+            style={{ backgroundColor: peekNumberColor }}
+          />
         )}
 
         <div className="flex-1 flex items-center justify-center w-full relative">
@@ -590,7 +593,7 @@ export default function App() {
                     <div className="flex items-center gap-2 text-white/50 justify-between"><div className="flex items-center gap-2"><SlidersHorizontal size={14} /><span className="uppercase text-[10px] tracking-widest font-bold">Dimensione</span></div><span className="text-[10px] font-mono">{peekNumberSize}%</span></div>
                     <input 
                       type="range" 
-                      min="4" 
+                      min="1" 
                       max="80" 
                       value={peekNumberSize}
                       className="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-white" 
