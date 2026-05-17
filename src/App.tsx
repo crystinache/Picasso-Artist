@@ -151,6 +151,7 @@ export default function App() {
   const [isCalibratingPeek, setIsCalibratingPeek] = useState(true);
   const [receivedNumber, setReceivedNumber] = useState<string | null>(null);
   const [isVibrationEnabled, setIsVibrationEnabled] = useState(() => localStorage.getItem('picasso_vibrate_peek') === 'true');
+  const [isRecallVibrationEnabled, setIsRecallVibrationEnabled] = useState(() => localStorage.getItem('picasso_recall_vibrate') === 'true');
   const [isNumberVisible, setIsNumberVisible] = useState(() => localStorage.getItem('picasso_show_number_peek') !== 'false');
 
   // Sync settings to localStorage
@@ -159,8 +160,9 @@ export default function App() {
     localStorage.setItem('picasso_peek_size', peekNumberSize.toString());
     localStorage.setItem('picasso_peek_position', JSON.stringify(peekPosition));
     localStorage.setItem('picasso_vibrate_peek', isVibrationEnabled.toString());
+    localStorage.setItem('picasso_recall_vibrate', isRecallVibrationEnabled.toString());
     localStorage.setItem('picasso_show_number_peek', isNumberVisible.toString());
-  }, [peekNumberColor, peekNumberSize, peekPosition, isVibrationEnabled, isNumberVisible]);
+  }, [peekNumberColor, peekNumberSize, peekPosition, isVibrationEnabled, isRecallVibrationEnabled, isNumberVisible]);
 
   // Handle Vibration logic based on received number
   useEffect(() => {
@@ -177,8 +179,55 @@ export default function App() {
 
     if (pattern.length > 0) {
       navigator.vibrate(pattern);
+
+      // Recall vibration after 2 seconds if enabled
+      if (isRecallVibrationEnabled) {
+        const timeoutId = setTimeout(() => {
+          navigator.vibrate(pattern);
+        }, 2000 + pattern.reduce((a, b) => a + b, 0)); // Delay after first sequence ends
+        return () => clearTimeout(timeoutId);
+      }
     }
-  }, [receivedNumber, isVibrationEnabled]);
+  }, [receivedNumber, isVibrationEnabled, isRecallVibrationEnabled]);
+
+  // Screen Wake Lock logic for mobile
+  useEffect(() => {
+    if (!isPeekMode) return;
+
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (!isMobile) return;
+
+    let wakeLock: any = null;
+
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await (navigator as any).wakeLock.request('screen');
+        }
+      } catch (err) {
+        console.error('Wake Lock request failed:', err);
+      }
+    };
+
+    requestWakeLock();
+
+    const handleVisibilityChange = () => {
+      if (wakeLock !== null && document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      if (wakeLock) {
+        wakeLock.release().then(() => {
+          wakeLock = null;
+        });
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isPeekMode]);
 
   // Sync Color Mappings from Supabase
   useEffect(() => {
@@ -560,6 +609,22 @@ export default function App() {
                       className={`w-12 h-6 rounded-full relative transition-colors duration-200 ${isVibrationEnabled ? 'bg-orange-500' : 'bg-gray-700'}`}
                     >
                       <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-200 ${isVibrationEnabled ? 'left-7' : 'left-1'}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between bg-gray-900/50 p-3 rounded-xl border border-gray-800">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isRecallVibrationEnabled ? 'bg-purple-500/20 text-purple-500' : 'bg-gray-800 text-gray-500'}`}><Undo2 size={16} /></div>
+                      <div>
+                        <div className="text-white text-xs font-bold uppercase tracking-tight">Recall Vibrate</div>
+                        <div className="text-[9px] text-white/40">Ripete dopo 2 secondi</div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setIsRecallVibrationEnabled(!isRecallVibrationEnabled)}
+                      className={`w-12 h-6 rounded-full relative transition-colors duration-200 ${isRecallVibrationEnabled ? 'bg-purple-500' : 'bg-gray-700'}`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-200 ${isRecallVibrationEnabled ? 'left-7' : 'left-1'}`} />
                     </button>
                   </div>
 
